@@ -1,21 +1,232 @@
 # News Article Scraper Configuration
 
-sources:
+# Common configurations by news source
+common_configs:
   cnn:
-    base_url: "https://www.cnn.com/world" 
     article_selector: "a.container__link, .card a" 
     date_format: "%Y/%m/%d"
     headers:
       User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    # Additional CNN-specific configurations
     content_selector: "div.article__content p, .article-content p"
     title_selector: "h1.headline__text"
     author_selector: "span.byline__name, div.byline span"
-    max_articles: 20  # max num of articles to scrap
+    max_articles: 400
+  
+  fox_news:
+    article_selector: "h3.title a, .article-list .title a, .content article h2.title a"
+    date_format: "%B %d, %Y %I:%M%p"
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    content_selector: "div.article-body p, article p"
+    title_selector: "h1.headline"
+    author_selector: "div.author-byline span.author, .author-byline a"
+    date_selector: "div.article-date time, .time"
+    max_articles: 400
+    
+  nytimes:
+    article_selector: "a.css-8hfphe, a.css-9mylee, h2 a, .css-1l4w6pd a, .css-1cp3ece a, .css-1qiat4j a"
+    date_format: "%Y-%m-%dT%H:%M:%S"
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    content_selector: "section[name='articleBody'] p, .article-content p, .StoryBodyCompanionColumn p, .css-53u6y8 p"
+    title_selector: "h1[data-testid='headline'], h1.e1h9rw200, h1.css-1vxca1d"
+    author_selector: "span[itemprop='name'], span.last-byline, a[rel='author'], span.css-1baulvz"
+    date_selector: "time[datetime], time[data-testid='timestamp']"
+    max_articles: 400
+    
+  washingtonpost:
+    article_selector: "div.card a.font-md, .story-headline a"
+    date_format: "%Y-%m-%dT%H:%M:%S"
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    content_selector: "div.article-body p, .article-content p, .teaser-content p"
+    title_selector: "h1.font-copy-display, h1[data-qa='headline-text']"
+    author_selector: "a[data-qa='author-name'], span.author-name"
+    date_selector: "div.display-date"
+    max_articles: 400
+    
+  bbc:
+    article_selector: "a.gs-c-promo-heading, .title-link__content-link"
+    date_format: "%Y-%m-%dT%H:%M:%S"
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    content_selector: "article p, .ssrcss-11r1m41-RichTextComponentWrapper p, div[data-component='text-block']"
+    title_selector: "h1#main-heading, h1.ssrcss-1pl2zfy-StyledHeading"
+    author_selector: "div.ssrcss-68pt20-Text-TextContributorName, .byline__name"
+    date_selector: "time[data-testid='timestamp']"
+    max_articles: 400
+    
+  reuters:
+    article_selector: "a.media-story-card__heading__eqhp9, a[data-testid='Heading']"
+    date_format: "%B %d, %Y"
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    content_selector: "div[data-testid='article-body'] p, .article-body p"
+    title_selector: "h1[data-testid='Heading'], h1.article-header__title__3Y2hh"
+    author_selector: "a[data-testid='author-byline'], div.author-byline a"
+    date_selector: "time[data-testid='article-datetime']"
+    max_articles: 400
+    
+  apnews:
+    article_selector: "a.Link, .CardHeadline a"
+    date_format: "%Y-%m-%d %H:%M:%S"
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    content_selector: "div.RichTextStoryBody p, .Article p"
+    title_selector: "h1.Page-headline, h1"
+    author_selector: "span.Link, div.byline a, .Page-authors span"
+    date_selector: "div.Timestamp"
+    max_articles: 400
+    
+  theguardian:
+    article_selector: "a.js-headline-text, .fc-item__link"
+    date_format: "%Y-%m-%dT%H:%M:%S"
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    content_selector: "div.article-body p, .content__article-body p, .dcr-185kcx9 p"
+    title_selector: "h1.dcr-y70mar, h1.content__headline"
+    author_selector: "a[rel='author'], span[itemprop='name']"
+    date_selector: "time[datetime]"
+    max_articles: 400
+    
+  usatoday:
+    article_selector: "a.gnt_m_flm_a, a.gnt-hedlink"
+    date_format: "%Y-%m-%dT%H:%M:%S"
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    content_selector: "div.gnt_ar_b p, .story-text p"
+    title_selector: "h1.gnt_ar_hl, h1.title"
+    author_selector: "a.gnt_ar_by_a, div.byline a"
+    date_selector: "div.gnt_ar_dt"
+    max_articles: 400
 
+# Sources to scrape
+sources:
+  # CNN sources
+  # cnn_politics:
+  #   base_url: "https://www.cnn.com/politics"
+  #   inherit: "cnn"
+    
+  # cnn_entertainment:
+  #   base_url: "https://www.cnn.com/entertainment"
+  #   inherit: "cnn"
+    
+  # cnn_business:
+  #   base_url: "https://www.cnn.com/business"
+  #   inherit: "cnn"
+
+  # # Fox News sources
+  # fox_news_opinion:
+  #   base_url: "https://www.foxnews.com/opinion"
+  #   inherit: "fox_news"
+    
+  # fox_news_entertainment:
+  #   base_url: "https://www.foxnews.com/entertainment"
+  #   inherit: "fox_news"
+    
+  # fox_news_sports:
+  #   base_url: "https://www.foxnews.com/sports"
+  #   inherit: "fox_news"
+    
+  # fox_news_politics:
+  #   base_url: "https://www.foxnews.com/politics"
+  #   inherit: "fox_news"
+    
+  # New York Times sources
+  nytimes_politics:
+    base_url: "https://www.nytimes.com/section/politics"
+    inherit: "nytimes"
+    
+  nytimes_world:
+    base_url: "https://www.nytimes.com/section/world"
+    inherit: "nytimes"
+    
+  nytimes_business:
+    base_url: "https://www.nytimes.com/section/business"
+    inherit: "nytimes"
+    
+  # Washington Post sources
+  wapo_politics:
+    base_url: "https://www.washingtonpost.com/politics/"
+    inherit: "washingtonpost"
+    
+  wapo_world:
+    base_url: "https://www.washingtonpost.com/world/"
+    inherit: "washingtonpost"
+    
+  wapo_business:
+    base_url: "https://www.washingtonpost.com/business/"
+    inherit: "washingtonpost"
+    
+  # BBC sources
+  bbc_world:
+    base_url: "https://www.bbc.com/news/world"
+    inherit: "bbc"
+    
+  bbc_business:
+    base_url: "https://www.bbc.com/news/business"
+    inherit: "bbc"
+    
+  bbc_tech:
+    base_url: "https://www.bbc.com/news/technology"
+    inherit: "bbc"
+    
+  # Reuters sources
+  reuters_world:
+    base_url: "https://www.reuters.com/world/"
+    inherit: "reuters"
+    
+  reuters_business:
+    base_url: "https://www.reuters.com/business/"
+    inherit: "reuters"
+    
+  reuters_markets:
+    base_url: "https://www.reuters.com/markets/"
+    inherit: "reuters"
+    
+  # Associated Press sources
+  ap_politics:
+    base_url: "https://apnews.com/hub/politics"
+    inherit: "apnews"
+    
+  ap_world:
+    base_url: "https://apnews.com/hub/world-news"
+    inherit: "apnews"
+    
+  ap_business:
+    base_url: "https://apnews.com/hub/business"
+    inherit: "apnews"
+    
+  # Guardian sources
+  guardian_world:
+    base_url: "https://www.theguardian.com/world"
+    inherit: "theguardian"
+    
+  guardian_politics:
+    base_url: "https://www.theguardian.com/politics"
+    inherit: "theguardian"
+    
+  guardian_business:
+    base_url: "https://www.theguardian.com/business"
+    inherit: "theguardian"
+    
+  # USA Today sources
+  usatoday_politics:
+    base_url: "https://www.usatoday.com/news/politics/"
+    inherit: "usatoday"
+    
+  usatoday_world:
+    base_url: "https://www.usatoday.com/news/world/"
+    inherit: "usatoday"
+    
+  usatoday_money:
+    base_url: "https://www.usatoday.com/money/"
+    inherit: "usatoday"
+
+# Global settings
 settings:
   start_date: "2025-02-20"
   output_csv: "news_articles.csv"
   request_delay: 1.5
-  max_articles_per_source: 100  # global setting for maximum articles per source
-  save_interval: 5 # save to csv every x entries
+  max_articles_per_source: 1000
+  save_interval: 5

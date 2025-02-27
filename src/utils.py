@@ -4,6 +4,7 @@ Utility functions for the news scraper
 
 import yaml
 import logging
+import copy
 from datetime import datetime
 from typing import Dict, Any
 
@@ -21,6 +22,11 @@ def setup_logger(log_file='scraper.log', console_level=logging.INFO, file_level=
     """
     # Create logger
     logger = logging.getLogger("news_scraper")
+    
+    # Check if handlers are already configured to avoid duplicate handlers
+    if logger.handlers:
+        return logger
+        
     logger.setLevel(logging.DEBUG)  # Set to lowest level to capture everything
     
     # Create formatters
@@ -64,6 +70,39 @@ def load_config(config_path: str) -> Dict[str, Any]:
         logger.error(f"Failed to load configuration: {e}")
         raise
 
+def resolve_source_inheritance(sources: Dict[str, Any], common_configs: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Resolve source inheritance from common configurations.
+    
+    Args:
+        sources: Sources configuration dictionary
+        common_configs: Common configurations dictionary
+        
+    Returns:
+        Dictionary of sources with resolved inheritance
+    """
+    resolved_sources = {}
+    
+    for name, source_config in sources.items():
+        # Create a new dictionary for this source
+        resolved_config = {}
+        
+        # Check if this source inherits from a common config
+        inherit_from = source_config.get('inherit')
+        if inherit_from and inherit_from in common_configs:
+            # Start with the common config as base
+            resolved_config.update(copy.deepcopy(common_configs[inherit_from]))
+        
+        # Update with source-specific config, overriding inherited values if needed
+        for key, value in source_config.items():
+            if key != 'inherit':  # Skip the inherit key itself
+                resolved_config[key] = value
+        
+        # Store the resolved config
+        resolved_sources[name] = resolved_config
+        
+    return resolved_sources
+
 def init_sources(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     """
     Process source configurations.
@@ -75,12 +114,31 @@ def init_sources(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         Dictionary of processed source configurations
     """
     sources = {}
-    for name, source_config in config.get('sources', {}).items():
-        if source_config.get('base_url') and source_config.get('article_selector'):
-            sources[name] = source_config
-            logger.info(f"Initialized source: {name}")
-        else:
-            logger.warning(f"Skipping source {name}: missing required configuration")
+    
+    # Check if we have the new format with common_configs
+    if 'common_configs' in config and 'sources' in config:
+        common_configs = config.get('common_configs', {})
+        source_configs = config.get('sources', {})
+        
+        # Resolve inheritance
+        resolved_sources = resolve_source_inheritance(source_configs, common_configs)
+        
+        # Validate sources
+        for name, source_config in resolved_sources.items():
+            if source_config.get('base_url') and source_config.get('article_selector'):
+                sources[name] = source_config
+                logger.info(f"Initialized source: {name}")
+            else:
+                logger.warning(f"Skipping source {name}: missing required configuration")
+                
+    # Fallback to old format
+    else:
+        for name, source_config in config.get('sources', {}).items():
+            if source_config.get('base_url') and source_config.get('article_selector'):
+                sources[name] = source_config
+                logger.info(f"Initialized source: {name}")
+            else:
+                logger.warning(f"Skipping source {name}: missing required configuration")
     
     return sources
 
@@ -98,7 +156,7 @@ def get_settings(config: Dict[str, Any]) -> Dict[str, Any]:
     
     if 'start_date' in settings:
         try:
-            # datetime object to validate format
+            # Convert to datetime object to validate format
             start_date = datetime.strptime(settings['start_date'], "%Y-%m-%d")
             logger.info(f"Filtering articles from {start_date.strftime('%Y-%m-%d')}")
         except ValueError as e:
@@ -108,7 +166,6 @@ def get_settings(config: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning("No start_date provided. Using current date.")
         settings['start_date'] = datetime.now().strftime("%Y-%m-%d")
     
-    # default stores if key not found
     settings.setdefault('output_csv', 'news_articles.csv')
     settings.setdefault('request_delay', 1.0)
     
