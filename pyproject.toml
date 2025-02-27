@@ -11,5 +11,6 @@ dependencies = [
     "pyyaml>=6.0.2",
     "requests>=2.32.3",
     "ruff>=0.9.7",
-    "lxml>=4.9.2"
+    "lxml>=4.9.2",
+    "datasets>=3.3.2",
 ]
