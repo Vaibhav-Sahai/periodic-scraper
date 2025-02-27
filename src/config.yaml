@@ -1,0 +1,12 @@
+sources:
+  cnn:
+    base_url: "https://www.cnn.com/latest"
+    article_selector: ".card a"
+    date_format: "%Y/%m/%d"
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+settings:
+  start_date: "2025-02-20"
+  output_csv: "news_articles.csv"
+  request_delay: 1.5
