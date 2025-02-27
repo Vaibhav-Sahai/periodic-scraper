@@ -1,0 +1,7 @@
+[project]
+name = "periodic-scraper"
+version = "0.1.0"
+description = "webscraper for news and articles"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
