@@ -7,7 +7,6 @@ import logging
 from datetime import datetime
 from typing import Dict, Any
 
-# Configure logging at module level
 def setup_logger(log_file='scraper.log', console_level=logging.INFO, file_level=logging.DEBUG):
     """
     Set up and configure the logger.
@@ -44,7 +43,6 @@ def setup_logger(log_file='scraper.log', console_level=logging.INFO, file_level=
     
     return logger
 
-# Create a default logger - modules can import this
 logger = setup_logger()
 
 def load_config(config_path: str) -> Dict[str, Any]:
@@ -98,10 +96,9 @@ def get_settings(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     settings = config.get('settings', {})
     
-    # Validate start date
     if 'start_date' in settings:
         try:
-            # Convert to datetime object to validate format
+            # datetime object to validate format
             start_date = datetime.strptime(settings['start_date'], "%Y-%m-%d")
             logger.info(f"Filtering articles from {start_date.strftime('%Y-%m-%d')}")
         except ValueError as e:
@@ -111,7 +108,7 @@ def get_settings(config: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning("No start_date provided. Using current date.")
         settings['start_date'] = datetime.now().strftime("%Y-%m-%d")
     
-    # Set defaults for missing settings
+    # default stores if key not found
     settings.setdefault('output_csv', 'news_articles.csv')
     settings.setdefault('request_delay', 1.0)
     

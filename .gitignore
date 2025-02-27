@@ -11,3 +11,5 @@ wheels/
 
 # ignore log files
 *.log
+# ignore any generated csv files
+*.csv

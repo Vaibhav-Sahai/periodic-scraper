@@ -1,12 +1,21 @@
+# News Article Scraper Configuration
+
 sources:
   cnn:
-    base_url: "https://www.cnn.com/latest"
-    article_selector: ".card a"
+    base_url: "https://www.cnn.com/world" 
+    article_selector: "a.container__link, .card a" 
     date_format: "%Y/%m/%d"
     headers:
       User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    # Additional CNN-specific configurations
+    content_selector: "div.article__content p, .article-content p"
+    title_selector: "h1.headline__text"
+    author_selector: "span.byline__name, div.byline span"
+    max_articles: 20  # max num of articles to scrap
 
 settings:
   start_date: "2025-02-20"
   output_csv: "news_articles.csv"
   request_delay: 1.5
+  max_articles_per_source: 100  # global setting for maximum articles per source
+  save_interval: 5 # save to csv every x entries
