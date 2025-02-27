@@ -24,7 +24,7 @@ common_configs:
     max_articles: 400
     
   nytimes:
-    article_selector: "a.css-8hfphe, a.css-9mylee, h2 a, .css-1l4w6pd a, .css-1cp3ece a, .css-1qiat4j a"
+    article_selector: "article a, div.css-13mho3u a, ol li article a"
     date_format: "%Y-%m-%dT%H:%M:%S"
     headers:
       User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -56,26 +56,17 @@ common_configs:
     date_selector: "time[data-testid='timestamp']"
     max_articles: 400
     
-  reuters:
-    article_selector: "a.media-story-card__heading__eqhp9, a[data-testid='Heading']"
-    date_format: "%B %d, %Y"
-    headers:
-      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    content_selector: "div[data-testid='article-body'] p, .article-body p"
-    title_selector: "h1[data-testid='Heading'], h1.article-header__title__3Y2hh"
-    author_selector: "a[data-testid='author-byline'], div.author-byline a"
-    date_selector: "time[data-testid='article-datetime']"
-    max_articles: 400
-    
   apnews:
-    article_selector: "a.Link, .CardHeadline a"
-    date_format: "%Y-%m-%d %H:%M:%S"
+    article_selector: "a.Link, .CardHeadline a, .PagePromo-title a, .PagePromo-media a"
+    date_format: "%Y-%m-%dT%H:%M:%S"
     headers:
       User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    content_selector: "div.RichTextStoryBody p, .Article p"
-    title_selector: "h1.Page-headline, h1"
-    author_selector: "span.Link, div.byline a, .Page-authors span"
-    date_selector: "div.Timestamp"
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+      Accept-Language: "en-US,en;q=0.5"
+    content_selector: "div.RichTextStoryBody p, .Article p, article .body p, .Article-content p"
+    title_selector: "h1.Page-headline, h1, .headline"
+    author_selector: "span.Link, div.byline a, .Page-authors span, a.Author-name"
+    date_selector: "div.Timestamp, time"
     max_articles: 400
     
   theguardian:
@@ -115,7 +106,39 @@ sources:
   #   base_url: "https://www.cnn.com/business"
   #   inherit: "cnn"
 
+  cnn_health:
+    base_url: "https://www.cnn.com/health"
+    inherit: "cnn"
+
+  cnn_sports:
+    base_url: "https://www.cnn.com/sport"
+    inherit: "cnn"
+  
+  cnn_science:
+    base_url: "https://www.cnn.com/science"
+    inherit: "cnn"
+  
+  cnn_weather:
+    base_url: "https://www.cnn.com/weather"
+    inherit: "cnn"
+  
+  # cnn_us:
+  #   base_url: "https://www.cnn.com/us"
+  #   inherit: "cnn"
+
+  # cnn_world:
+  #   base_url: "https://www.cnn.com/world" 
+  #   inherit: "cnn"
+  
   # # Fox News sources
+  # fox_news_world:
+  #   base_url: "https://www.foxnews.com/world"
+  #   inherit: "fox_news"
+  
+  # fox_news_us:
+  #   base_url: "https://www.foxnews.com/us"
+  #   inherit: "fox_news"
+
   # fox_news_opinion:
   #   base_url: "https://www.foxnews.com/opinion"
   #   inherit: "fox_news"
@@ -131,97 +154,116 @@ sources:
   # fox_news_politics:
   #   base_url: "https://www.foxnews.com/politics"
   #   inherit: "fox_news"
+  
+  fox_news_lifestyle:
+    base_url: "https://www.foxnews.com/lifestyle"
+    inherit: "fox_news"
+  
+  fox_news_health:
+    base_url: "https://www.foxnews.com/health"
+    inherit: "fox_news"
+  
+  fox_news_media:
+    base_url: "https://www.foxnews.com/media"
+    inherit: "fox_news"
+  
+  fox_news_tech:
+    base_url: "https://www.foxnews.com/tech"
+    inherit: "fox_news"
     
-  # New York Times sources
-  nytimes_politics:
-    base_url: "https://www.nytimes.com/section/politics"
-    inherit: "nytimes"
+  # # New York Times sources
+  # nytimes_politics:
+  #   base_url: "https://www.nytimes.com/section/politics"
+  #   inherit: "nytimes"
     
-  nytimes_world:
-    base_url: "https://www.nytimes.com/section/world"
-    inherit: "nytimes"
+  # nytimes_world:
+  #   base_url: "https://www.nytimes.com/section/world"
+  #   inherit: "nytimes"
     
-  nytimes_business:
-    base_url: "https://www.nytimes.com/section/business"
-    inherit: "nytimes"
+  # nytimes_business:
+  #   base_url: "https://www.nytimes.com/section/business"
+  #   inherit: "nytimes"
     
-  # Washington Post sources
-  wapo_politics:
-    base_url: "https://www.washingtonpost.com/politics/"
-    inherit: "washingtonpost"
+  # # Washington Post sources
+  # wapo_politics:
+  #   base_url: "https://www.washingtonpost.com/politics/"
+  #   inherit: "washingtonpost"
     
-  wapo_world:
-    base_url: "https://www.washingtonpost.com/world/"
-    inherit: "washingtonpost"
+  # wapo_world:
+  #   base_url: "https://www.washingtonpost.com/world/"
+  #   inherit: "washingtonpost"
     
-  wapo_business:
-    base_url: "https://www.washingtonpost.com/business/"
-    inherit: "washingtonpost"
+  # wapo_business:
+  #   base_url: "https://www.washingtonpost.com/business/"
+  #   inherit: "washingtonpost"
     
-  # BBC sources
-  bbc_world:
-    base_url: "https://www.bbc.com/news/world"
-    inherit: "bbc"
+  # # BBC sources
+  # bbc_world:
+  #   base_url: "https://www.bbc.com/news/world"
+  #   inherit: "bbc"
     
-  bbc_business:
-    base_url: "https://www.bbc.com/news/business"
-    inherit: "bbc"
+  # bbc_business:
+  #   base_url: "https://www.bbc.com/news/business"
+  #   inherit: "bbc"
     
-  bbc_tech:
-    base_url: "https://www.bbc.com/news/technology"
-    inherit: "bbc"
+  # bbc_tech:
+  #   base_url: "https://www.bbc.com/news/technology"
+  #   inherit: "bbc"
     
-  # Reuters sources
-  reuters_world:
-    base_url: "https://www.reuters.com/world/"
-    inherit: "reuters"
+  # # Associated Press sources
+  # ap_politics:
+  #   base_url: "https://apnews.com/hub/politics"
+  #   inherit: "apnews"
     
-  reuters_business:
-    base_url: "https://www.reuters.com/business/"
-    inherit: "reuters"
+  # ap_world:
+  #   base_url: "https://apnews.com/hub/world-news"
+  #   inherit: "apnews"
     
-  reuters_markets:
-    base_url: "https://www.reuters.com/markets/"
-    inherit: "reuters"
+  # ap_business:
+  #   base_url: "https://apnews.com/hub/business"
+  #   inherit: "apnews"
+
+  # ap_entertainment:
+  #   base_url: "https://apnews.com/entertainment"
+  #   inherit: "apnews"
+  
+  # ap_science:
+  #   base_url: "https://apnews.com/science"
+  #   inherit: "apnews"
+  
+  # ap_sports:
+  #   base_url: "https://apnews.com/sports"
+  #   inherit: "apnews"
+  
+  # ap_usa:
+  #   base_url: "https://apnews.com/us-news"
+  #   inherit: "apnews"
     
-  # Associated Press sources
-  ap_politics:
-    base_url: "https://apnews.com/hub/politics"
-    inherit: "apnews"
+  # # Guardian sources
+  # guardian_world:
+  #   base_url: "https://www.theguardian.com/world"
+  #   inherit: "theguardian"
     
-  ap_world:
-    base_url: "https://apnews.com/hub/world-news"
-    inherit: "apnews"
+  # guardian_politics:
+  #   base_url: "https://www.theguardian.com/politics"
+  #   inherit: "theguardian"
     
-  ap_business:
-    base_url: "https://apnews.com/hub/business"
-    inherit: "apnews"
+  # guardian_business:
+  #   base_url: "https://www.theguardian.com/business"
+  #   inherit: "theguardian"
     
-  # Guardian sources
-  guardian_world:
-    base_url: "https://www.theguardian.com/world"
-    inherit: "theguardian"
+  # # USA Today sources
+  # usatoday_politics:
+  #   base_url: "https://www.usatoday.com/news/politics/"
+  #   inherit: "usatoday"
     
-  guardian_politics:
-    base_url: "https://www.theguardian.com/politics"
-    inherit: "theguardian"
+  # usatoday_world:
+  #   base_url: "https://www.usatoday.com/news/world/"
+  #   inherit: "usatoday"
     
-  guardian_business:
-    base_url: "https://www.theguardian.com/business"
-    inherit: "theguardian"
-    
-  # USA Today sources
-  usatoday_politics:
-    base_url: "https://www.usatoday.com/news/politics/"
-    inherit: "usatoday"
-    
-  usatoday_world:
-    base_url: "https://www.usatoday.com/news/world/"
-    inherit: "usatoday"
-    
-  usatoday_money:
-    base_url: "https://www.usatoday.com/money/"
-    inherit: "usatoday"
+  # usatoday_money:
+  #   base_url: "https://www.usatoday.com/money/"
+  #   inherit: "usatoday"
 
 # Global settings
 settings:

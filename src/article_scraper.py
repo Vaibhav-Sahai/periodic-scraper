@@ -84,7 +84,12 @@ def get_article_urls(source_name: str, source_config: Dict[str, Any],
                         date_pattern = r'/\d{4}/\d{2}/\d{2}/'
                         if re.search(date_pattern, full_url):
                             urls.append(full_url)
+                    # Special handling for NYTimes
+                    elif source_name.lower().startswith('nytimes'):
+                        if is_nytimes_article_url(full_url):
+                            urls.append(full_url)
                     else:
+                        # Default behavior for all other sources remains unchanged
                         urls.append(full_url)
                 
                 # Check again after potentially adding a URL
@@ -160,13 +165,29 @@ def extract_article_bs4(url: str, source_name: str, source_config: Dict[str, Any
         
         # Extract publication date
         pub_date = None
-        
+
         # Try to get date from URL first 
         url_date = get_date_from_url(url)
         if url_date:
             pub_date = url_date
-        
-        # If no date from URL, look for time elements
+
+        # Look for meta tags with publication date - especially for AP News
+        if not pub_date:
+            # Check for article:published_time meta tag (used by AP News)
+            published_meta = soup.find('meta', {'property': 'article:published_time'})
+            if published_meta and published_meta.get('content'):
+                try:
+                    date_str = published_meta.get('content')
+                    # Handle both formats with and without timezone
+                    if 'T' in date_str:
+                        if date_str.endswith('Z'):
+                            pub_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                        else:
+                            pub_date = datetime.fromisoformat(date_str)
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Error parsing meta date: {e}")
+
+        # If still no date, try time elements as before
         if not pub_date:
             time_element = soup.find('time') or soup.select_one('span[class*="date"]') or soup.select_one('div[class*="date"]')
             if time_element:
@@ -178,11 +199,6 @@ def extract_article_bs4(url: str, source_name: str, source_config: Dict[str, Any
                     except (ValueError, TypeError):
                         # If parsing fails, keep None
                         pass
-        
-        # If still no date, use current date as fallback
-        if not pub_date:
-            pub_date = datetime.now()
-            logger.warning(f"No publication date found for {url}, using current time")
         
         # Extract author using source-specific selector if available
         authors = []
@@ -328,3 +344,29 @@ def scrape_source(source_name: str, source_config: Dict[str, Any],
     
     logger.info(f"Completed scraping for {source_name}. Extracted {len(articles)} articles.")
     return articles
+
+def is_nytimes_article_url(url):
+    """
+    Determines if a NYTimes URL is likely an article based on its pattern.
+    
+    Args:
+        url: The URL to check
+        
+    Returns:
+        Boolean indicating if the URL is likely an article
+    """
+    # Skip pagination and section links
+    if '?page=' in url or url.endswith('/section/politics') or url.endswith('/section/world') or url.endswith('/section/business'):
+        return False
+        
+    # Skip video pages
+    if '/video/' in url:
+        return False
+    
+    # Accept Spanish articles
+    if '/es/' in url and '/espanol/' in url:
+        return True
+        
+    # Articles usually have a date pattern in the URL
+    date_pattern = r'/\d{4}/\d{2}/\d{2}/'
+    return bool(re.search(date_pattern, url))
