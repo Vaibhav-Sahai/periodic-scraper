@@ -1,5 +1,6 @@
 """
 Simple scheduler - Runs scraper and updates Huggingface every 12 hours
+Only pushes when there are new articles
 """
 
 import os
@@ -7,31 +8,13 @@ import sys
 import time
 import uuid
 import datetime
-import subprocess
 from collections import OrderedDict
 from datasets import load_dataset
+from huggingface_hub import login
 
-def run_scraper():
-    """Run the scraper to gather new articles"""
-    print("Starting scraper to gather new articles...")
-    
-    try:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        runner_path = os.path.join(script_dir, "runner.py")
-        
-        result = subprocess.run([sys.executable, runner_path], 
-                                capture_output=True, text=True)
-        
-        if result.returncode != 0:
-            print(f"Error running scraper: {result.stderr}")
-            return False
-        
-        print("Scraper completed successfully")
-        return True
-    
-    except Exception as e:
-        print(f"Error running scraper: {e}")
-        return False
+# Import runner directly
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from runner import run as run_scraper
 
 def count_articles(csv_path):
     """Count the number of articles in the CSV file"""
@@ -48,11 +31,14 @@ def upload_to_huggingface(csv_path, repo_id="VaibhavSahai/news_articles"):
     try:
         print("Processing dataset...")
         
+        # Count articles before processing
         before_count = count_articles(csv_path)
         print(f"Found {before_count} articles before processing")
         
+        # Load the dataset
         dataset = load_dataset('csv', data_files=csv_path)
         
+        # Apply transformations
         def add_uuid(example):
             example['uuid'] = str(uuid.uuid5(uuid.NAMESPACE_URL, example['url']))
             return example
@@ -79,18 +65,27 @@ def upload_to_huggingface(csv_path, repo_id="VaibhavSahai/news_articles"):
         dataset = dataset.map(add_uuid)
         dataset = dataset.map(reorder_columns)
         
+        # Count after processing
         after_count = len(dataset['train'])
         
+        # Calculate the number of new articles
         diff = after_count - before_count
         
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        commit_message = f"Update {now}: Added {diff} new articles" if diff > 0 else f"Update {now}: No new articles"
-        
-        print(f"Pushing to Huggingface with message: {commit_message}")
-        dataset.push_to_hub(repo_id, commit_message=commit_message)
-        
-        print(f"Successfully uploaded to {repo_id}")
-        return True
+        # Only push if there are new articles
+        if diff > 0:
+            # Create commit message
+            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            commit_message = f"Update {now}: Added {diff} new articles"
+            
+            # Push to hub
+            print(f"Pushing to Huggingface with message: {commit_message}")
+            dataset.push_to_hub(repo_id, commit_message=commit_message)
+            
+            print(f"Successfully uploaded {diff} new articles to {repo_id}")
+            return True
+        else:
+            print("No new articles found, skipping upload")
+            return False
     
     except Exception as e:
         print(f"Error uploading to Huggingface: {e}")
@@ -98,6 +93,7 @@ def upload_to_huggingface(csv_path, repo_id="VaibhavSahai/news_articles"):
 
 def main():
     """Run the scheduler loop"""
+    # Find the CSV file
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(script_dir)
     
@@ -117,19 +113,43 @@ def main():
     
     print(f"Using CSV file: {csv_path}")
     
+    # Check for Huggingface token
+    if not os.environ.get('HF_TOKEN'):
+        print("Warning: HF_TOKEN environment variable not set")
+        print("Will attempt to use cached credentials")
+    
+    # Option to run once or continuously
+    continuous = True
+    if len(sys.argv) > 1 and sys.argv[1] == "--once":
+        continuous = False
+        print("Running in single-execution mode")
+    
     try:
         while True:
-            scraper_success = run_scraper()
+            # Run the scraper
+            print("Starting scraper to gather new articles...")
+            scraper_result = run_scraper()
             
-            if scraper_success:
+            if scraper_result == 0:
+                print("Scraper completed successfully")
+                # Upload to Huggingface only if there are new articles
                 upload_to_huggingface(csv_path)
+            else:
+                print(f"Scraper failed with exit code {scraper_result}")
             
+            # Exit if we're in single-execution mode
+            if not continuous:
+                break
+                
+            # Sleep for 12 hours
             next_run = datetime.datetime.now() + datetime.timedelta(hours=12)
             print(f"Next run scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
-            time.sleep(12 * 3600) 
+            time.sleep(12 * 3600)  # 12 hours in seconds
             
     except KeyboardInterrupt:
         print("Scheduler stopped by user")
+    except Exception as e:
+        print(f"Error in scheduler: {e}")
     
     return 0
 
