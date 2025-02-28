@@ -46,14 +46,14 @@ common_configs:
     max_articles: 400
     
   bbc:
-    article_selector: "a.gs-c-promo-heading, .title-link__content-link"
+    article_selector: "a.ssrcss-uf6wea-PromoLink, a.ssrcss-z3v9z-PromoLink, a.ssrcss-18c1cn3-PromoLink, a[data-testid='internal-link'], h3.promo-heading__title a"
     date_format: "%Y-%m-%dT%H:%M:%S"
     headers:
       User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    content_selector: "article p, .ssrcss-11r1m41-RichTextComponentWrapper p, div[data-component='text-block']"
-    title_selector: "h1#main-heading, h1.ssrcss-1pl2zfy-StyledHeading"
-    author_selector: "div.ssrcss-68pt20-Text-TextContributorName, .byline__name"
-    date_selector: "time[data-testid='timestamp']"
+    content_selector: "article[data-component='text-block'] p, div[data-component='text-block'] p, .ssrcss-11r1m41-RichTextComponentWrapper p, div[data-component='text-block'], article p"
+    title_selector: "h1#main-heading, h1.ssrcss-1pl2zfy-StyledHeading, h1"
+    author_selector: "div.ssrcss-68pt20-Text-TextContributorName, .byline__name, span[data-testid='byline']"
+    date_selector: "time[data-testid='timestamp'], time"
     max_articles: 400
     
   apnews:
@@ -93,83 +93,83 @@ common_configs:
 
 # Sources to scrape
 sources:
-  # CNN sources
-  cnn_politics:
-    base_url: "https://www.cnn.com/politics"
-    inherit: "cnn"
+  # # CNN sources
+  # cnn_politics:
+  #   base_url: "https://www.cnn.com/politics"
+  #   inherit: "cnn"
     
-  cnn_entertainment:
-    base_url: "https://www.cnn.com/entertainment"
-    inherit: "cnn"
+  # cnn_entertainment:
+  #   base_url: "https://www.cnn.com/entertainment"
+  #   inherit: "cnn"
     
-  cnn_business:
-    base_url: "https://www.cnn.com/business"
-    inherit: "cnn"
+  # cnn_business:
+  #   base_url: "https://www.cnn.com/business"
+  #   inherit: "cnn"
 
-  cnn_health:
-    base_url: "https://www.cnn.com/health"
-    inherit: "cnn"
+  # cnn_health:
+  #   base_url: "https://www.cnn.com/health"
+  #   inherit: "cnn"
 
-  cnn_sports:
-    base_url: "https://www.cnn.com/sport"
-    inherit: "cnn"
+  # cnn_sports:
+  #   base_url: "https://www.cnn.com/sport"
+  #   inherit: "cnn"
   
-  cnn_science:
-    base_url: "https://www.cnn.com/science"
-    inherit: "cnn"
+  # cnn_science:
+  #   base_url: "https://www.cnn.com/science"
+  #   inherit: "cnn"
   
-  cnn_weather:
-    base_url: "https://www.cnn.com/weather"
-    inherit: "cnn"
+  # cnn_weather:
+  #   base_url: "https://www.cnn.com/weather"
+  #   inherit: "cnn"
   
-  cnn_us:
-    base_url: "https://www.cnn.com/us"
-    inherit: "cnn"
+  # cnn_us:
+  #   base_url: "https://www.cnn.com/us"
+  #   inherit: "cnn"
 
-  cnn_world:
-    base_url: "https://www.cnn.com/world" 
-    inherit: "cnn"
+  # cnn_world:
+  #   base_url: "https://www.cnn.com/world" 
+  #   inherit: "cnn"
   
-  # Fox News sources
-  fox_news_world:
-    base_url: "https://www.foxnews.com/world"
-    inherit: "fox_news"
+  # # Fox News sources
+  # fox_news_world:
+  #   base_url: "https://www.foxnews.com/world"
+  #   inherit: "fox_news"
   
-  fox_news_us:
-    base_url: "https://www.foxnews.com/us"
-    inherit: "fox_news"
+  # fox_news_us:
+  #   base_url: "https://www.foxnews.com/us"
+  #   inherit: "fox_news"
 
-  fox_news_opinion:
-    base_url: "https://www.foxnews.com/opinion"
-    inherit: "fox_news"
+  # fox_news_opinion:
+  #   base_url: "https://www.foxnews.com/opinion"
+  #   inherit: "fox_news"
     
-  fox_news_entertainment:
-    base_url: "https://www.foxnews.com/entertainment"
-    inherit: "fox_news"
+  # fox_news_entertainment:
+  #   base_url: "https://www.foxnews.com/entertainment"
+  #   inherit: "fox_news"
     
-  fox_news_sports:
-    base_url: "https://www.foxnews.com/sports"
-    inherit: "fox_news"
+  # fox_news_sports:
+  #   base_url: "https://www.foxnews.com/sports"
+  #   inherit: "fox_news"
     
-  fox_news_politics:
-    base_url: "https://www.foxnews.com/politics"
-    inherit: "fox_news"
+  # fox_news_politics:
+  #   base_url: "https://www.foxnews.com/politics"
+  #   inherit: "fox_news"
   
-  fox_news_lifestyle:
-    base_url: "https://www.foxnews.com/lifestyle"
-    inherit: "fox_news"
+  # fox_news_lifestyle:
+  #   base_url: "https://www.foxnews.com/lifestyle"
+  #   inherit: "fox_news"
   
-  fox_news_health:
-    base_url: "https://www.foxnews.com/health"
-    inherit: "fox_news"
+  # fox_news_health:
+  #   base_url: "https://www.foxnews.com/health"
+  #   inherit: "fox_news"
   
-  fox_news_media:
-    base_url: "https://www.foxnews.com/media"
-    inherit: "fox_news"
+  # fox_news_media:
+  #   base_url: "https://www.foxnews.com/media"
+  #   inherit: "fox_news"
   
-  fox_news_tech:
-    base_url: "https://www.foxnews.com/tech"
-    inherit: "fox_news"
+  # fox_news_tech:
+  #   base_url: "https://www.foxnews.com/tech"
+  #   inherit: "fox_news"
     
   # # New York Times sources
   # nytimes_politics:
@@ -209,85 +209,105 @@ sources:
   # bbc_tech:
   #   base_url: "https://www.bbc.com/news/technology"
   #   inherit: "bbc"
+  
+  # bbc_news:
+  #   base_url: "https://www.bbc.com/news"
+  #   inherit: "bbc"
+  
+  # bbc_sports:
+  #   base_url: "https://www.bbc.com/sport"
+  #   inherit: "bbc"
+  
+  # bbc_business:
+  #   base_url: "https://www.bbc.com/business"
+  #   inherit: "bbc"
+  
+  # bbc_travel:
+  #   base_url: "https://www.bbc.com/travel"
+  #   inherit: "bbc"
+  
+  # bbc_arts:
+  #   base_url: "https://www.bbc.com/arts"
+  #   inherit: "bbc"
     
-  # Associated Press sources
-  ap_politics:
-    base_url: "https://apnews.com/hub/politics"
-    inherit: "apnews"
+  # # Associated Press sources
+  # ap_politics:
+  #   base_url: "https://apnews.com/hub/politics"
+  #   inherit: "apnews"
     
-  ap_world:
-    base_url: "https://apnews.com/hub/world-news"
-    inherit: "apnews"
+  # ap_world:
+  #   base_url: "https://apnews.com/hub/world-news"
+  #   inherit: "apnews"
     
-  ap_business:
-    base_url: "https://apnews.com/hub/business"
-    inherit: "apnews"
+  # ap_business:
+  #   base_url: "https://apnews.com/hub/business"
+  #   inherit: "apnews"
 
-  ap_entertainment:
-    base_url: "https://apnews.com/entertainment"
-    inherit: "apnews"
+  # ap_entertainment:
+  #   base_url: "https://apnews.com/entertainment"
+  #   inherit: "apnews"
   
-  ap_science:
-    base_url: "https://apnews.com/science"
-    inherit: "apnews"
+  # ap_science:
+  #   base_url: "https://apnews.com/science"
+  #   inherit: "apnews"
   
-  ap_sports:
-    base_url: "https://apnews.com/sports"
-    inherit: "apnews"
+  # ap_sports:
+  #   base_url: "https://apnews.com/sports"
+  #   inherit: "apnews"
   
-  ap_usa:
-    base_url: "https://apnews.com/us-news"
-    inherit: "apnews"
+  # ap_usa:
+  #   base_url: "https://apnews.com/us-news"
+  #   inherit: "apnews"
     
-  # # Guardian sources
-  # guardian_world:
-  #   base_url: "https://www.theguardian.com/world"
-  #   inherit: "theguardian"
+  # Guardian sources
+  guardian_world:
+    base_url: "https://www.theguardian.com/world"
+    inherit: "theguardian"
     
-  # guardian_politics:
-  #   base_url: "https://www.theguardian.com/politics"
-  #   inherit: "theguardian"
+  guardian_politics:
+    base_url: "https://www.theguardian.com/politics"
+    inherit: "theguardian"
     
-  # guardian_business:
-  #   base_url: "https://www.theguardian.com/business"
-  #   inherit: "theguardian"
+  guardian_business:
+    base_url: "https://www.theguardian.com/business"
+    inherit: "theguardian"
     
   # # USA Today sources
-  usatoday_politics:
-    base_url: "https://www.usatoday.com/news/politics/"
-    inherit: "usatoday"
+  # usatoday_politics:
+  #   base_url: "https://www.usatoday.com/news/politics/"
+  #   inherit: "usatoday"
     
-  usatoday_world:
-    base_url: "https://www.usatoday.com/news/world/"
-    inherit: "usatoday"
+  # usatoday_world:
+  #   base_url: "https://www.usatoday.com/news/world/"
+  #   inherit: "usatoday"
     
-  usatoday_money:
-    base_url: "https://www.usatoday.com/money/"
-    inherit: "usatoday"
+  # usatoday_money:
+  #   base_url: "https://www.usatoday.com/money/"
+  #   inherit: "usatoday"
 
-  usatoday_entertainment:
-    base_url: "https://www.usatoday.com/entertainment/"
-    inherit: "usatoday"
+  # usatoday_entertainment:
+  #   base_url: "https://www.usatoday.com/entertainment/"
+  #   inherit: "usatoday"
 
-  usatoday_sports:
-    base_url: "https://www.usatoday.com/sports/"
-    inherit: "usatoday"
+  # usatoday_sports:
+  #   base_url: "https://www.usatoday.com/sports/"
+  #   inherit: "usatoday"
   
-  usatoday_us:
-    base_url: "https://www.usatoday.com/news/nation/"
-    inherit: "usatoday"
+  # usatoday_us:
+  #   base_url: "https://www.usatoday.com/news/nation/"
+  #   inherit: "usatoday"
   
-  usatoday_life:
-    base_url: "https://www.usatoday.com/life/"
-    inherit: "usatoday"
+  # usatoday_life:
+  #   base_url: "https://www.usatoday.com/life/"
+  #   inherit: "usatoday"
   
-  usatoday_opinion:
-    base_url: "https://www.usatoday.com/opinion/"
-    inherit: "usatoday"
+  # usatoday_opinion:
+  #   base_url: "https://www.usatoday.com/opinion/"
+  #   inherit: "usatoday"
   
-  usatoday_travel:
-    base_url: "https://www.usatoday.com/travel/"
-    inherit: "usatoday"
+  # usatoday_travel:
+  #   base_url: "https://www.usatoday.com/travel/"
+  #   inherit: "usatoday"
 
 # Global settings
 settings:

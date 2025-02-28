@@ -88,6 +88,9 @@ def get_article_urls(source_name: str, source_config: Dict[str, Any],
                     elif source_name.lower().startswith('nytimes'):
                         if is_nytimes_article_url(full_url):
                             urls.append(full_url)
+                    elif source_name.lower().startswith('bbc'):
+                        if is_bbc_article_url(full_url):
+                            urls.append(full_url)
                     else:
                         # Default behavior for all other sources remains unchanged
                         urls.append(full_url)
@@ -370,3 +373,29 @@ def is_nytimes_article_url(url):
     # Articles usually have a date pattern in the URL
     date_pattern = r'/\d{4}/\d{2}/\d{2}/'
     return bool(re.search(date_pattern, url))
+
+def is_bbc_article_url(url):
+    """
+    Determines if a BBC URL is likely an article based on its pattern.
+    
+    Args:
+        url: The URL to check
+        
+    Returns:
+        Boolean indicating if the URL is likely an article
+    """
+    # Skip pagination, categories, tags, etc.
+    if '/topics/' in url or '/tags/' in url or '/live/' in url or '/programmes/' in url:
+        return False
+        
+    # Skip video-only pages
+    if '/av/' in url:
+        return False
+    
+    # Accept articles with these patterns
+    if '/news/articles/' in url or '/news/uk-' in url or '/news/world-' in url or '/news/business-' in url:
+        return True
+    
+    # Many BBC articles have a numeric ID in the URL
+    numeric_pattern = r'/news/[-a-z]+-\d+'
+    return bool(re.search(numeric_pattern, url))
