@@ -8,13 +8,14 @@ import sys
 import time
 import uuid
 import datetime
+import pandas as pd
 from collections import OrderedDict
 from datasets import load_dataset
-from huggingface_hub import login
 
 # Import runner directly
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from runner import run as run_scraper
+from utils import logger
 
 def count_articles(csv_path):
     """Count the number of articles in the CSV file"""
@@ -26,14 +27,22 @@ def count_articles(csv_path):
         print(f"Error counting articles: {e}")
         return 0
 
+def get_article_count_from_csv(csv_path):
+    """Count the number of articles in the CSV file"""
+    try:
+        df = pd.read_csv(csv_path)
+        return len(df)
+    except Exception as e:
+        logger.error(f"Error counting articles: {e}")
+        return 0
+
 def upload_to_huggingface(csv_path, repo_id="VaibhavSahai/news_articles"):
     """Process and upload the dataset to Huggingface"""
     try:
-        print("Processing dataset...")
-        
-        # Count articles before processing
-        before_count = count_articles(csv_path)
-        print(f"Found {before_count} articles before processing")
+        # Important: Store the article count BEFORE processing
+        logger.info(f"Reading CSV file: {csv_path}")
+        before_count = get_article_count_from_csv(csv_path)
+        logger.info(f"Found {before_count} articles before processing")
         
         # Load the dataset
         dataset = load_dataset('csv', data_files=csv_path)
@@ -67,6 +76,7 @@ def upload_to_huggingface(csv_path, repo_id="VaibhavSahai/news_articles"):
         
         # Count after processing
         after_count = len(dataset['train'])
+        logger.info(f"Found {after_count} articles after processing")
         
         # Calculate the number of new articles
         diff = after_count - before_count
@@ -78,17 +88,17 @@ def upload_to_huggingface(csv_path, repo_id="VaibhavSahai/news_articles"):
             commit_message = f"Update {now}: Added {diff} new articles"
             
             # Push to hub
-            print(f"Pushing to Huggingface with message: {commit_message}")
+            logger.info(f"Pushing to Huggingface with message: {commit_message}")
             dataset.push_to_hub(repo_id, commit_message=commit_message)
             
-            print(f"Successfully uploaded {diff} new articles to {repo_id}")
+            logger.info(f"Successfully uploaded {diff} new articles to {repo_id}")
             return True
         else:
-            print("No new articles found, skipping upload")
+            logger.info("No new articles found, skipping upload")
             return False
     
     except Exception as e:
-        print(f"Error uploading to Huggingface: {e}")
+        logger.error(f"Error uploading to Huggingface: {e}")
         return False
 
 def main():
@@ -108,34 +118,74 @@ def main():
             break
     
     if not csv_path:
-        print("Could not find news_articles.csv")
+        logger.error("Could not find news_articles.csv")
         return 1
     
-    print(f"Using CSV file: {csv_path}")
+    logger.info(f"Using CSV file: {csv_path}")
     
     # Check for Huggingface token
     if not os.environ.get('HF_TOKEN'):
-        print("Warning: HF_TOKEN environment variable not set")
-        print("Will attempt to use cached credentials")
+        logger.warning("HF_TOKEN environment variable not set")
+        logger.warning("Will attempt to use cached credentials")
+    
+    # Create a persistent file to store the last article count
+    tracker_file = os.path.join(os.path.dirname(csv_path), ".last_article_count")
+    
+    # Function to get and update the tracker
+    def get_last_article_count():
+        if os.path.exists(tracker_file):
+            try:
+                with open(tracker_file, 'r') as f:
+                    return int(f.read().strip())
+            except:
+                return 0
+        return 0
+        
+    def save_article_count(count):
+        try:
+            with open(tracker_file, 'w') as f:
+                f.write(str(count))
+        except Exception as e:
+            logger.error(f"Error saving article count: {e}")
     
     # Option to run once or continuously
     continuous = True
     if len(sys.argv) > 1 and sys.argv[1] == "--once":
         continuous = False
-        print("Running in single-execution mode")
+        logger.info("Running in single-execution mode")
     
     try:
         while True:
+            # Get article count before running scraper
+            last_count = get_last_article_count()
+            logger.info(f"Last recorded article count: {last_count}")
+            
             # Run the scraper
-            print("Starting scraper to gather new articles...")
+            logger.info("Starting scraper to gather new articles...")
             scraper_result = run_scraper()
             
             if scraper_result == 0:
-                print("Scraper completed successfully")
-                # Upload to Huggingface only if there are new articles
-                upload_to_huggingface(csv_path)
+                logger.info("Scraper completed successfully")
+                
+                # Get current article count
+                current_count = get_article_count_from_csv(csv_path)
+                logger.info(f"Current article count: {current_count}")
+                
+                # Only upload if we have new articles
+                if current_count > last_count:
+                    logger.info(f"Found {current_count - last_count} new articles")
+                    # Add the count difference to the dataset object in upload_to_huggingface
+                    # so we know exactly how many articles to report in the commit message
+                    upload_success = upload_to_huggingface(csv_path)
+                    
+                    if upload_success:
+                        # Update the tracker file only if upload was successful
+                        save_article_count(current_count)
+                        logger.info(f"Updated tracker with new count: {current_count}")
+                else:
+                    logger.info("No new articles found")
             else:
-                print(f"Scraper failed with exit code {scraper_result}")
+                logger.error(f"Scraper failed with exit code {scraper_result}")
             
             # Exit if we're in single-execution mode
             if not continuous:
@@ -143,13 +193,13 @@ def main():
                 
             # Sleep for 12 hours
             next_run = datetime.datetime.now() + datetime.timedelta(hours=12)
-            print(f"Next run scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
+            logger.info(f"Next run scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
             time.sleep(12 * 3600)  # 12 hours in seconds
             
     except KeyboardInterrupt:
-        print("Scheduler stopped by user")
+        logger.info("Scheduler stopped by user")
     except Exception as e:
-        print(f"Error in scheduler: {e}")
+        logger.error(f"Error in scheduler: {e}")
     
     return 0
 
