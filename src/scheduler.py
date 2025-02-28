@@ -39,10 +39,7 @@ def get_article_count_from_csv(csv_path):
 def upload_to_huggingface(csv_path, repo_id="VaibhavSahai/news_articles"):
     """Process and upload the dataset to Huggingface"""
     try:
-        # Important: Store the article count BEFORE processing
-        logger.info(f"Reading CSV file: {csv_path}")
-        before_count = get_article_count_from_csv(csv_path)
-        logger.info(f"Found {before_count} articles before processing")
+        logger.info(f"Processing dataset from {csv_path}...")
         
         # Load the dataset
         dataset = load_dataset('csv', data_files=csv_path)
@@ -74,28 +71,20 @@ def upload_to_huggingface(csv_path, repo_id="VaibhavSahai/news_articles"):
         dataset = dataset.map(add_uuid)
         dataset = dataset.map(reorder_columns)
         
-        # Count after processing
-        after_count = len(dataset['train'])
-        logger.info(f"Found {after_count} articles after processing")
+        # Count total articles
+        total_articles = len(dataset['train'])
+        logger.info(f"Total articles in dataset: {total_articles}")
         
-        # Calculate the number of new articles
-        diff = after_count - before_count
+        # Create commit message with timestamp
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        commit_message = f"Update {now}: Scheduled update"
         
-        # Only push if there are new articles
-        if diff > 0:
-            # Create commit message
-            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            commit_message = f"Update {now}: Added {diff} new articles"
-            
-            # Push to hub
-            logger.info(f"Pushing to Huggingface with message: {commit_message}")
-            dataset.push_to_hub(repo_id, commit_message=commit_message)
-            
-            logger.info(f"Successfully uploaded {diff} new articles to {repo_id}")
-            return True
-        else:
-            logger.info("No new articles found, skipping upload")
-            return False
+        # Push to hub
+        logger.info(f"Pushing to Huggingface with message: {commit_message}")
+        dataset.push_to_hub(repo_id, commit_message=commit_message)
+        
+        logger.info(f"Successfully uploaded dataset to {repo_id}")
+        return True
     
     except Exception as e:
         logger.error(f"Error uploading to Huggingface: {e}")
@@ -128,26 +117,6 @@ def main():
         logger.warning("HF_TOKEN environment variable not set")
         logger.warning("Will attempt to use cached credentials")
     
-    # Create a persistent file to store the last article count
-    tracker_file = os.path.join(os.path.dirname(csv_path), ".last_article_count")
-    
-    # Function to get and update the tracker
-    def get_last_article_count():
-        if os.path.exists(tracker_file):
-            try:
-                with open(tracker_file, 'r') as f:
-                    return int(f.read().strip())
-            except:
-                return 0
-        return 0
-        
-    def save_article_count(count):
-        try:
-            with open(tracker_file, 'w') as f:
-                f.write(str(count))
-        except Exception as e:
-            logger.error(f"Error saving article count: {e}")
-    
     # Option to run once or continuously
     continuous = True
     if len(sys.argv) > 1 and sys.argv[1] == "--once":
@@ -156,10 +125,6 @@ def main():
     
     try:
         while True:
-            # Get article count before running scraper
-            last_count = get_last_article_count()
-            logger.info(f"Last recorded article count: {last_count}")
-            
             # Run the scraper
             logger.info("Starting scraper to gather new articles...")
             scraper_result = run_scraper()
@@ -167,23 +132,8 @@ def main():
             if scraper_result == 0:
                 logger.info("Scraper completed successfully")
                 
-                # Get current article count
-                current_count = get_article_count_from_csv(csv_path)
-                logger.info(f"Current article count: {current_count}")
-                
-                # Only upload if we have new articles
-                if current_count > last_count:
-                    logger.info(f"Found {current_count - last_count} new articles")
-                    # Add the count difference to the dataset object in upload_to_huggingface
-                    # so we know exactly how many articles to report in the commit message
-                    upload_success = upload_to_huggingface(csv_path)
-                    
-                    if upload_success:
-                        # Update the tracker file only if upload was successful
-                        save_article_count(current_count)
-                        logger.info(f"Updated tracker with new count: {current_count}")
-                else:
-                    logger.info("No new articles found")
+                # Always upload after running the scraper
+                upload_to_huggingface(csv_path)
             else:
                 logger.error(f"Scraper failed with exit code {scraper_result}")
             
