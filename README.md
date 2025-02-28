@@ -5,5 +5,5 @@ A simple webscraper for scraping news and articles. Includes pushing to huggingf
 cnn is cnn_world
 fox_news is fox_news_world
 
-working: fox, cnn, ap, usatoday, bbc
+working: fox, cnn, ap, usatoday, bbc, guardian
 guranteed wont work: reuters

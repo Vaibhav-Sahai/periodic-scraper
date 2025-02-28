@@ -91,6 +91,9 @@ def get_article_urls(source_name: str, source_config: Dict[str, Any],
                     elif source_name.lower().startswith('bbc'):
                         if is_bbc_article_url(full_url):
                             urls.append(full_url)
+                    elif 'guardian' in source_name.lower():
+                        if is_guardian_article_url(full_url):
+                            urls.append(full_url)
                     else:
                         # Default behavior for all other sources remains unchanged
                         urls.append(full_url)
@@ -399,3 +402,50 @@ def is_bbc_article_url(url):
     # Many BBC articles have a numeric ID in the URL
     numeric_pattern = r'/news/[-a-z]+-\d+'
     return bool(re.search(numeric_pattern, url))
+
+def is_guardian_article_url(url):
+    """
+    Determines if a Guardian URL is likely an article based on its pattern.
+    
+    Args:
+        url: The URL to check
+        
+    Returns:
+        Boolean indicating if the URL is likely an article
+    """
+    # Skip pagination, categories, tags, etc.
+    if '/help/' in url or '/about/' in url or '/info/' in url or '/profile/' in url:
+        return False
+        
+    # Skip section pages and other non-article pages
+    if url.endswith('/world') or url.endswith('/politics') or url.endswith('/business'):
+        return False
+    
+    # Skip search results
+    if '/search?' in url:
+        return False
+    
+    # Skip static assets, images, and non-article sections
+    if '/static/' in url or '/images/' in url or '/media/' in url or '/video/' in url:
+        return False
+    
+    # Skip newsletter sign-ups, subscriptions
+    if '/sign-up/' in url or '/subscribe/' in url or '/newsletters/' in url:
+        return False
+    
+    # Accept paths with date patterns (YYYY/mon/dd)
+    date_pattern = r'/\d{4}/[a-z]{3}/\d{2}/'
+    if re.search(date_pattern, url):
+        return True
+        
+    # Accept article URLs that contain year/month/date in another format
+    date_pattern_alt = r'/\d{4}/\d{2}/\d{2}/'
+    if re.search(date_pattern_alt, url):
+        return True
+    
+    # Most Guardian articles end with a descriptive slug
+    segments = url.rstrip('/').split('/')
+    if len(segments) > 4 and '-' in segments[-1]:
+        return True
+        
+    return False
