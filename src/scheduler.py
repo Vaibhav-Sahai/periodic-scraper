@@ -77,7 +77,7 @@ def upload_to_huggingface(csv_path, repo_id="VaibhavSahai/news_articles"):
         
         # Create commit message with timestamp
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        commit_message = f"Update {now}: Scheduled update"
+        commit_message = f"Update {now}: Scheduled update, new total count: {total_articles}"
         
         # Push to hub
         logger.info(f"Pushing to Huggingface with message: {commit_message}")

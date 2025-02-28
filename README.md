@@ -2,8 +2,8 @@
 
 A simple webscraper for scraping news and articles. Includes pushing to huggingface.
 
-cnn is cnn_world
-fox_news is fox_news_world
 
 working: fox, cnn, ap, usatoday, bbc, guardian
 guranteed wont work: reuters
+
+scrapes every 12hrs from start time
