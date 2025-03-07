@@ -10,6 +10,9 @@ from urllib.parse import urljoin
 from utils import logger
 from typing import Dict, List, Any, Optional
 import re
+import json
+
+TIMEOUT = 10 # in seconds
 
 def get_article_urls(source_name: str, source_config: Dict[str, Any], 
                      max_pages: int = 5, request_delay: float = 1.0,
@@ -115,9 +118,9 @@ def get_article_urls(source_name: str, source_config: Dict[str, Any],
     
     return unique_urls
 
-def get_date_from_url(url: str) -> Optional[datetime]:
+def get_date_from_url(url):
     """
-    Extract date from URL for sources like CNN that include dates in URL paths.
+    Extract date from URL for sources that include dates in URL paths.
     
     Args:
         url: The article URL
@@ -125,32 +128,68 @@ def get_date_from_url(url: str) -> Optional[datetime]:
     Returns:
         Datetime object or None if date couldn't be extracted
     """
-    # CNN URLs typically have date format like /2025/02/25/
-    match = re.search(r'/(\d{4})/(\d{2})/(\d{2})/', url)
-    if match:
-        year, month, day = match.groups()
+    # Common URL date patterns
+    patterns = [
+        # CNN, WaPo, etc: /2023/03/25/
+        r'/(\d{4})/(\d{1,2})/(\d{1,2})/',
+        
+        # NYT style: /2023/03/25/world/
+        r'/(\d{4})/(\d{1,2})/(\d{1,2})/\w+/',
+        
+        # URLs with date at the end: example-story-20230325
+        r'-(\d{4})(\d{2})(\d{2})$',
+        
+        # Guardian style: /2023/mar/25/
+        r'/(\d{4})/([a-z]{3})/(\d{1,2})/',
+    ]
+    
+    month_abbr = {
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+        'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+    }
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            try:
+                year, month, day = match.groups()
+                
+                # Convert month abbr to number if needed
+                if month.isalpha():
+                    month = month_abbr.get(month.lower(), 1)
+                
+                year = int(year)
+                month = int(month)
+                day = int(day)
+                
+                # Basic validation
+                if 1900 <= year <= 2100 and 1 <= month <= 12 and 1 <= day <= 31:
+                    return datetime(year, month, day)
+            except (ValueError, AttributeError):
+                continue
+    
+    # BBC specific pattern with timestamp at end
+    bbc_match = re.search(r'-(\d{8})$', url)
+    if bbc_match:
         try:
-            return datetime(int(year), int(month), int(day))
+            # BBC article IDs sometimes contain dates in format YYYYMMDD
+            date_str = bbc_match.group(1)
+            if len(date_str) == 8:
+                year = int(date_str[:4])
+                month = int(date_str[4:6])
+                day = int(date_str[6:8])
+                if 1900 <= year <= 2100 and 1 <= month <= 12 and 1 <= day <= 31:
+                    return datetime(year, month, day)
         except ValueError:
-            return None
+            pass
+    
     return None
 
 def extract_article_bs4(url: str, source_name: str, source_config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """
-    Extract content and metadata from an article URL using BeautifulSoup.
-    
-    Args:
-        url: URL of the article to scrape
-        source_name: Name of the news source
-        source_config: Configuration for the source
-        
-    Returns:
-        Dictionary containing article data or None if extraction failed
-    """
     headers = source_config.get('headers', {'User-Agent': 'Mozilla/5.0'})
     
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=TIMEOUT)
         response.raise_for_status()
         
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -170,42 +209,13 @@ def extract_article_bs4(url: str, source_name: str, source_config: Dict[str, Any
                 title = title_element.text.strip()
         
         # Extract publication date
-        pub_date = None
-
-        # Try to get date from URL first 
-        url_date = get_date_from_url(url)
-        if url_date:
-            pub_date = url_date
-
-        # Look for meta tags with publication date - especially for AP News
-        if not pub_date:
-            # Check for article:published_time meta tag (used by AP News)
-            published_meta = soup.find('meta', {'property': 'article:published_time'})
-            if published_meta and published_meta.get('content'):
-                try:
-                    date_str = published_meta.get('content')
-                    # Handle both formats with and without timezone
-                    if 'T' in date_str:
-                        if date_str.endswith('Z'):
-                            pub_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                        else:
-                            pub_date = datetime.fromisoformat(date_str)
-                except (ValueError, TypeError) as e:
-                    logger.warning(f"Error parsing meta date: {e}")
-
-        # If still no date, try time elements as before
-        if not pub_date:
-            time_element = soup.find('time') or soup.select_one('span[class*="date"]') or soup.select_one('div[class*="date"]')
-            if time_element:
-                # Try to find a datetime attribute
-                datetime_str = time_element.get('datetime') or time_element.get('content')
-                if datetime_str:
-                    try:
-                        pub_date = datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
-                    except (ValueError, TypeError):
-                        # If parsing fails, keep None
-                        pass
+        pub_date = extract_date(soup, url)
         
+        # If we couldn't extract a date, skip this article
+        if not pub_date:
+            logger.warning(f"Error: Could not extract date from {url}")
+            return None
+            
         # Extract author using source-specific selector if available
         authors = []
         author_selector = source_config.get('author_selector')
@@ -254,7 +264,7 @@ def extract_article_bs4(url: str, source_name: str, source_config: Dict[str, Any
                 ]
                 content = '\n\n'.join([p.text.strip() for p in content_paragraphs])
         
-        # This is our generate metadata
+        # This is our generated metadata
         article_data = {
             'title': title if title else 'Unknown Title',
             'author': author,
@@ -449,3 +459,184 @@ def is_guardian_article_url(url):
         return True
         
     return False
+
+# EVERYTHING AFTER IS JUST TO EXTRACT DATE
+
+def extract_date(soup, url):
+    """
+    Extract publication date using multiple strategies, ordered by reliability.
+    
+    Args:
+        soup: BeautifulSoup object of the article page
+        url: URL of the article (for URL-based date extraction fallback)
+        
+    Returns:
+        datetime object or None if date couldn't be extracted
+    """
+    # Strategy 1: Try to get date from URL first
+    url_date = get_date_from_url(url)
+    if url_date:
+        return url_date
+    
+    # Strategy 2: JSON-LD structured data (highly reliable when available)
+    json_ld_date = extract_date_from_json_ld(soup)
+    if json_ld_date:
+        return json_ld_date
+    
+    # Strategy 3: Standard meta tags used by many news sites
+    meta_tags = [
+        {'property': 'article:published_time'},  # Open Graph
+        {'property': 'article:modified_time'},   # Fallback to modified time
+        {'name': 'pubdate'},                     # Common for older sites
+        {'name': 'publishdate'},                 # Variation
+        {'name': 'date'},                        # Generic
+        {'name': 'published-date'},              # Used by some news sites
+        {'itemprop': 'datePublished'},           # Schema.org markup
+        {'itemprop': 'dateModified'},            # Schema.org modified date
+        {'name': 'DC.date.issued'},              # Dublin Core
+        {'name': 'DC.date.created'},             # Dublin Core
+        {'name': 'DC.date'},                     # Dublin Core
+        {'name': 'article.published'},           # Custom CMS
+        {'name': 'article.created'},             # Custom CMS
+        {'name': 'date_published'},              # Custom CMS
+        {'property': 'og:published_time'},       # Open Graph variation
+    ]
+    
+    for meta_attrs in meta_tags:
+        meta_tag = soup.find('meta', meta_attrs)
+        if meta_tag and meta_tag.get('content'):
+            try:
+                date_str = meta_tag.get('content')
+                # Handle common ISO format with or without timezone
+                if 'T' in date_str:
+                    if date_str.endswith('Z'):
+                        pub_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                    else:
+                        pub_date = datetime.fromisoformat(date_str)
+                    return pub_date
+                # Try other common formats
+                for fmt in [
+                    '%Y-%m-%d',
+                    '%Y/%m/%d',
+                    '%B %d, %Y',
+                    '%d %B %Y',
+                ]:
+                    try:
+                        pub_date = datetime.strptime(date_str, fmt)
+                        return pub_date
+                    except ValueError:
+                        continue
+            except Exception:
+                pass
+    
+    # Strategy 4: Look for time elements
+    time_elements = soup.find_all('time')
+    for time_element in time_elements:
+        # Try to find a datetime attribute
+        datetime_str = time_element.get('datetime') or time_element.get('content')
+        if datetime_str:
+            try:
+                # Try ISO format first
+                if 'T' in datetime_str:
+                    if datetime_str.endswith('Z'):
+                        pub_date = datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+                    else:
+                        pub_date = datetime.fromisoformat(datetime_str)
+                    return pub_date
+                # Try common date formats
+                for fmt in ['%Y-%m-%d', '%Y/%m/%d', '%B %d, %Y', '%d %B %Y']:
+                    try:
+                        pub_date = datetime.strptime(datetime_str, fmt)
+                        return pub_date
+                    except ValueError:
+                        continue
+            except Exception:
+                pass
+    
+    # Strategy 5: Look for elements with date-related classes
+    date_classes = [
+        'date', 'time', 'timestamp', 'article-date', 'article__date',
+        'publication-date', 'byline-date', 'meta-date', 'story-date',
+        'publish-date', 'post-date'
+    ]
+    
+    for class_name in date_classes:
+        elements = soup.select(f'[class*="{class_name}"]')
+        for element in elements:
+            date_text = element.get_text().strip()
+            # Try common date formats in text
+            for fmt in ['%Y-%m-%d', '%B %d, %Y', '%d %B %Y', '%m/%d/%Y', '%d/%m/%Y']:
+                try:
+                    pub_date = datetime.strptime(date_text, fmt)
+                    return pub_date
+                except ValueError:
+                    continue
+    
+    # No date found
+    return None
+
+def extract_date_from_json_ld(soup):
+    """
+    Extract date from JSON-LD structured data.
+    
+    Args:
+        soup: BeautifulSoup object
+        
+    Returns:
+        datetime object or None
+    """
+    # Look for JSON-LD script tags
+    script_tags = soup.find_all('script', type='application/ld+json')
+    for script in script_tags:
+        try:
+            data = json.loads(script.string)
+            
+            # Handle array format
+            if isinstance(data, list):
+                data = data[0]
+            
+            # Check for datePublished field
+            if isinstance(data, dict):
+                # Direct datePublished property
+                if 'datePublished' in data and isinstance(data['datePublished'], str):
+                    try:
+                        date_str = data['datePublished']
+                        if 'T' in date_str:
+                            if date_str.endswith('Z'):
+                                return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                            else:
+                                return datetime.fromisoformat(date_str)
+                    except ValueError:
+                        pass
+                
+                # Check in nested article object
+                if 'article' in data and isinstance(data['article'], dict):
+                    if 'datePublished' in data['article'] and isinstance(data['article']['datePublished'], str):
+                        try:
+                            date_str = data['article']['datePublished']
+                            if 'T' in date_str:
+                                if date_str.endswith('Z'):
+                                    return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                                else:
+                                    return datetime.fromisoformat(date_str)
+                        except ValueError:
+                            pass
+                
+                # Check in @graph array
+                if '@graph' in data and isinstance(data['@graph'], list) and len(data['@graph']) > 0:
+                    for item in data['@graph']:
+                        if isinstance(item, dict) and 'datePublished' in item:
+                            try:
+                                date_str = item['datePublished']
+                                if 'T' in date_str:
+                                    if date_str.endswith('Z'):
+                                        return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                                    else:
+                                        return datetime.fromisoformat(date_str)
+                            except ValueError:
+                                continue
+                        
+        except (json.JSONDecodeError, AttributeError):
+            continue
+    
+    return None

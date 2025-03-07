@@ -17,6 +17,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from runner import run as run_scraper
 from utils import logger
 
+COMMIT_FREQ_HR = 8 # Push to Huggingface every x hours
+
 def count_articles(csv_path):
     """Count the number of articles in the CSV file"""
     try:
@@ -144,7 +146,7 @@ def main():
             # Sleep for 12 hours
             next_run = datetime.datetime.now() + datetime.timedelta(hours=12)
             logger.info(f"Next run scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
-            time.sleep(12 * 3600)  # 12 hours in seconds
+            time.sleep(COMMIT_FREQ_HR * 3600)  # 12 hours in seconds
             
     except KeyboardInterrupt:
         logger.info("Scheduler stopped by user")
